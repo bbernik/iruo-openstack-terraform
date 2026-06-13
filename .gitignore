@@ -1,0 +1,20 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+crash.*.log
+tfplan
+*.tfplan
+
+# OpenStack kredencijali - NIKAD na git
+*-rc
+admin-rc
+clouds.yaml
+
+# Kljucevi / tajne
+*.pem
+*.key
+id_rsa*
+id_ed25519*

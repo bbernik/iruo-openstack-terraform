@@ -1,0 +1,36 @@
+#cloud-config
+# Test web server na portu 80 (dokaz da load balancer i mreza rade) + data disk.
+# Pravi Moodle (podman) dolazi kasnije, kao i kod Azure dijela.
+
+write_files:
+  - path: /opt/web/serve.sh
+    permissions: "0755"
+    owner: root:root
+    content: |
+      #!/bin/bash
+      echo "<h1>TechSprint Moodle node $(hostname)</h1>" > /opt/web/index.html
+      PY=$(command -v python3 || echo /usr/libexec/platform-python)
+      cd /opt/web && exec "$PY" -m http.server 80
+  - path: /etc/systemd/system/techsprint-web.service
+    permissions: "0644"
+    owner: root:root
+    content: |
+      [Unit]
+      Description=TechSprint test web (port 80)
+      After=network-online.target
+      [Service]
+      ExecStart=/opt/web/serve.sh
+      Restart=always
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  # --- data disk (/dev/vdb) -> /data ---
+  - bash -c 'if [ -b /dev/vdb ] && ! blkid /dev/vdb; then mkfs.xfs -f /dev/vdb; fi'
+  - mkdir -p /data
+  - bash -c 'if [ -b /dev/vdb ] && ! grep -q " /data " /etc/fstab; then echo "/dev/vdb /data xfs defaults,nofail 0 2" >> /etc/fstab; fi'
+  - bash -c 'mountpoint -q /data || mount /data || true'
+  # --- test web ---
+  - mkdir -p /opt/web
+  - systemctl daemon-reload
+  - systemctl enable --now techsprint-web.service
